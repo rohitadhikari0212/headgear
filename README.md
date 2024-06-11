@@ -16,7 +16,7 @@ HEADGEAR is a comprehensive bash script tool crafted for cybersecurity professio
 
 1. **Installation:**
    ```
-   `git clone https://github.com/username/headgear.git
+   git clone https://github.com/username/headgear.git
    cd headgear
    chmod +x headgear
    mv -rvf headgear /usr/local/bin
