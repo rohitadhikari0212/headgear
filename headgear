@@ -1,0 +1,241 @@
+#!/bin/bash
+
+# shcheck - Security headers check!
+# Adapted from the original Python script by santoru
+# This script checks the presence of security headers on a given URL
+
+# Colors for output
+CYAN='\033[0;36m'
+GREEN='\033[06;32m'
+RED='\033[06;31m'
+BOLD='\033[1m'
+NC='\033[0m'
+
+headgear() {
+    echo -e "${CYAN}|===========================================================================|${NC}"
+    echo -e "${CYAN}| █████   █████                    █████ █████████                          |${NC}"
+    echo -e "${CYAN}|░░███   ░░███                    ░░███ ███░░░░░███                         |${NC}"
+    echo -e "${CYAN}| ░███    ░███  ██████ ██████   ██████████     ░░░  ██████ ██████ ████████  |${NC}"
+    echo -e "${CYAN}| ░███████████ ███░░██░░░░░███ ███░░██░███         ███░░██░░░░░██░░███░░███ |${NC}"
+    echo -e "${CYAN}| ░███░░░░░███░███████ ███████░███ ░██░███    ████░███████ ███████░███ ░░░  |${NC}"
+    echo -e "${CYAN}| ░███    ░███░███░░░ ███░░███░███ ░██░░███  ░░███░███░░░ ███░░███░███      |${NC}"
+    echo -e "${CYAN}| █████   ████░░█████░░███████░░███████░░█████████░░█████░░████████████     |${NC}"
+    echo -e "${CYAN}|░░░░░   ░░░░░ ░░░░░░ ░░░░░░░░ ░░░░░░░░ ░░░░░░░░░  ░░░░░░ ░░░░░░░░░░░░      |${NC}"
+    echo -e "${CYAN}|===========================================================================|${NC}"
+    echo -e "${CYAN}|    Enchanced tool to check security headers on a webserver                |${NC}"            
+    echo -e "${CYAN}|			Produced by Aexon                                   |${NC}"
+    echo -e "${CYAN}|===========================================================================|${NC}"
+    echo ""
+}
+
+# Default values for options
+PORT=""
+COOKIE=""
+CUSTOM_HEADERS=()
+SSLDISABLED=false
+USEGET=false
+JSON_OUTPUT=false
+INFORMATION=false
+CACHE_CONTROL=false
+SHOW_DEPRECATED=false
+PROXY=""
+HFILE=""
+COLOURS="dark"
+
+# Security headers
+HEADERS=(
+"Strict-Transport-Security"
+"Expect-Staple"
+"Feature-Policy"
+"Referrer-Policy"
+"X-Frame-Options-Policy"
+"Content-Disposition"
+"Expect"
+"Forwarded"
+"Host"
+"Origin"
+"Server-Timing"
+"Timing-Allow-Origin"
+"Sec-WebSocket-Key"
+"Sec-WebSocket-Extensions"
+"Sec-WebSocket-Accept"
+"Sec-WebSocket-Protocol"
+"X-XSS-Protection-Report-Only"
+"Access-Control-Expose-Headers"
+"Content-Language"
+"Content-Range"
+"Content-Transfer-Encoding"
+"Content-MD5"
+"Retry-After"
+"Server-Timing"
+"SourceMap"
+"Tk"
+"Link"
+"P3P"
+"Refresh"
+"X-Frame-Options"
+"X-XSS-Protection"
+"X-Content-Type-Options"
+"X-Download-Options"
+"X-DNS-Prefetch-Control"
+"X-Robots-Tag"
+"X-UA-Compatible"
+"Public-Key-Pins-Report-Only"
+"Expect-CT"
+"X-Permitted-Cross-Domain-Policies"
+"Permissions-Policy"
+"Cross-Origin-Embedder-Policy"
+"Cross-Origin-Resource-Policy"
+"Cross-Origin-Opener-Policy"
+"Access-Control-Allow-Origin"
+"Access-Control-Allow-Methods"
+"Access-Control-Allow-Headers"
+"Access-Control-Max-Age"
+"Access-Control-Allow-Credentials"
+"Public-Key-Pins"
+"Feature-Policy"
+"X-Download-Options"
+"X-DNS-Prefetch-Control"
+"Clear-Site-Data"
+"Report-To"
+"NEL"
+"Content-Security-Policy"
+"Content-Security-Policy-Report-Only"
+"Content-Type-Options"
+"Content-Type"
+"Content-Encoding"
+"Content-Length"
+"Connection"
+"ETag"
+"Vary"
+"X-Forwarded-For"
+"X-Forwarded-Host"
+"X-Forwarded-Proto"
+"X-Real-IP"
+"X-Requested-With"
+"X-ATT-DeviceId"
+"X-Wap-Profile"
+"Proxy-Authorization"
+"Proxy-Authenticate"
+"Cache-Control"
+"Pragma"
+"Expires"
+"Surrogate-Control"
+"X-Runtime"
+"X-Request-ID"
+"X-Content-Duration"
+"X-RateLimit-Limit"
+"X-RateLimit-Remaining"
+"X-RateLimit-Reset"
+"X-Robots-Tag"
+"X-Content-Security-Policy"
+"X-WebKit-CSP"
+"X-UA-Compatible"
+"Set-Cookie"
+"X-Powered-By"
+"X-AspNet-Version"
+"X-AspNetMvc-Version"
+"Server"
+)
+
+# Function to print the usage of the script
+usage() {
+    echo -e "${CYAN}Usage: $0 [options] <URL>${NC}"
+    echo "Options:"
+    echo "  -p, --port                   Set a custom port to connect to"
+    echo "  -c, --cookie                 Set cookies for the request"
+    echo "  -a, --add-header             Add headers for the request e.g. 'Header: value'"
+    echo "  -d, --disable-ssl-check      Disable SSL/TLS certificate validation"
+    echo "  -g, --use-get-method         Use GET method instead of HEAD method"
+    echo "  -j, --json-output            Print the output in JSON format"
+    echo "  -i, --information            Display information headers"
+    echo "  -x, --caching                Display caching headers"
+    echo "  -k, --deprecated             Display deprecated headers"
+    echo "  --proxy                      Set a proxy (Ex: http://127.0.0.1:8080)"
+    echo "  --hfile                      Load a list of hosts from a file"
+    echo "  --colours, --colors          Set up a colour profile [dark/light/none]"
+    echo "  -h, --help                   Show this help message"
+}
+
+# Function to parse HTTP headers
+parse_headers() {
+    while IFS=": " read -r name value; do
+        echo "${name,,}: $value"
+    done
+}
+
+# Function to check headers for a target
+check_headers() {
+    target=$1
+    headers_output=""
+
+    if [ "$USEGET" = true ]; then
+        headers_output=$(curl -s -I -X GET "$target")
+    else
+        headers_output=$(curl -s -I -X HEAD "$target")
+    fi
+
+    headers=$(parse_headers <<< "$headers_output")
+    declare -A headers_array
+    while read -r header; do
+        headers_array["$(echo $header | cut -d: -f1)"]="true"
+    done <<< "$headers"
+
+    safe=0
+    unsafe=0
+
+    echo -e "${CYAN}Checking security headers for $target${NC}"
+    echo -e "${CYAN}-------------------------------------${NC}"
+
+    for header in "${HEADERS[@]}"; do
+        header_name=$(echo "$header" | cut -d: -f1)
+        if [ "${headers_array["$(echo $header_name | tr '[:upper:]' '[:lower:]')"]}" = "true" ]; then
+            echo -e "${GREEN}[+] $header_name is present${NC}"
+            ((safe++))
+        else
+            echo -e "${RED}[-] $header_name is missing${NC}"
+            ((unsafe++))
+        fi
+    done
+
+    echo ""
+    echo -e "${CYAN}Summary for $target:${NC}"
+    echo -e "\033[01;32m  Present headers: $safe ${NC}"
+    echo -e "\033[01;31m  Missing headers: $unsafe ${NC}"
+}
+
+# Main function to parse arguments and execute script
+main() {
+headgear
+    while [[ "$#" -gt 0 ]]; do
+        case $1 in
+            -p|--port) PORT="$2"; shift ;;
+            -c|--cookie) COOKIE="$2"; shift ;;
+            -a|--add-header) CUSTOM_HEADERS+=("$2"); shift ;;
+            -d|--disable-ssl-check) SSLDISABLED=true ;;
+            -g|--use-get-method) USEGET=true ;;
+            -j|--json-output) JSON_OUTPUT=true ;;
+            -i|--information) INFORMATION=true ;;
+            -x|--caching) CACHE_CONTROL=true ;;
+            -k|--deprecated) SHOW_DEPRECATED=true ;;
+            --proxy) PROXY="$2"; shift ;;
+            --hfile) HFILE="$2"; shift ;;
+            --colours|--colors) COLOURS="$2"; shift ;;
+            -h|--help) usage; exit 0 ;;
+            *) URL="$1" ;;
+        esac
+        shift
+    done
+
+    if [[ -z "$URL" ]]; then
+        echo -e "${RED}Error: URL is required${NC}"
+        usage
+        exit 1
+    fi
+
+    check_headers "$URL"
+}
+
+main "$@"
+
+echo -e "\033[1m \nThanks for using headgear"
