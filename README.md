@@ -54,7 +54,7 @@ To Install the tool:
 
 4. Move the script to a directory in your PATH (e.g., /usr/local/bin):
    ```
-   mv -rvf headgear.sh /usr/local/bin
+   mv -rvf headgear /usr/local/bin
    ```
 
 To Get Help:
