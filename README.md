@@ -19,7 +19,7 @@ HEADGEAR is a comprehensive bash script tool crafted for cybersecurity professio
    git clone https://github.com/username/headgear.git
    cd headgear
    chmod +x headgear
-   mv -rvf headgear /usr/local/bin
+   mv -rvf headgear /usr/bin
    ```
 
 2. **Define Target:**
@@ -36,34 +36,14 @@ HEADGEAR is a comprehensive bash script tool crafted for cybersecurity professio
 
 HEADGEAR empowers users with a robust and straightforward tool to assess and bolster the security of web applications by analyzing and optimizing security headers effectively.
 
-To Install the tool:
-1. Clone the repository:
-   ```
-   git clone https://github.com/username/headgear.git
-   ```
 
-2. Navigate to the HEADGEAR directory:
-   ```
-   cd headgear
-   ```
-
-3. Provide execute permissions to the script:
-   ```
-   chmod +x headgear
-   ```
-
-4. Move the script to a directory in your PATH (e.g., /usr/local/bin):
-   ```
-   mv -rvf headgear /usr/local/bin
-   ```
-
-To Get Help:
-Run the command:
+# To Get Help:
+https://github.com/rohitadhikari0212/headgear.gitRun the command:
    ```
    headgear -h
    ```
 
-To Use the Tool:
+# To Use the Tool:
 Run the command:
    ```
    headgear http://example.com
