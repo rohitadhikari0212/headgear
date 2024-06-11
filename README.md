@@ -38,7 +38,7 @@ HEADGEAR empowers users with a robust and straightforward tool to assess and bol
 
 
 # To Get Help:
-https://github.com/rohitadhikari0212/headgear.gitRun the command:
+Run the command:
    ```
    headgear -h
    ```
